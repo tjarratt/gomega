@@ -1,6 +1,7 @@
 package matchers_test
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/matchers"
@@ -22,6 +23,38 @@ var _ = Describe("MatchJSONMatcher", func() {
 			Ω([]byte("{}")).Should(MatchJSON([]byte("{}")))
 			Ω("{}").Should(MatchJSON([]byte("{}")))
 			Ω([]byte("{}")).Should(MatchJSON("{}"))
+		})
+
+		FContext("when the actual JSON contains more fields than the expected", func() {
+			It("should not match", func() {
+				actual := `{"a":1, "b":2}`
+				expected := `{"a":1}`
+				matcher := &MatchJSONMatcher{JSONToMatch: actual}
+				success, err := matcher.Match(expected)
+				expectedMessage := fmt.Sprintf(`Expected %s to match json, but it has an extra field: "b":2`, actual)
+
+				Ω(success).Should(BeFalse())
+				Ω(err).ShouldNot(HaveOccurred())
+
+				failureMessage := matcher.FailureMessage(actual)
+				Ω(failureMessage).Should(ContainSubstring(expectedMessage))
+			})
+		})
+
+		FContext("when the expected JSON contains more fields than actual", func() {
+			It("should not match", func() {
+				expected := `{"a":1, "b":2}`
+				actual := `{"a":1}`
+				matcher := &MatchJSONMatcher{JSONToMatch: actual}
+				success, err := matcher.Match(expected)
+				expectedMessage := fmt.Sprintf(`Expected %s to match json, but it lacks the field: "b":2`, actual)
+
+				Ω(success).Should(BeFalse())
+				Ω(err).ShouldNot(HaveOccurred())
+
+				failureMessage := matcher.FailureMessage(actual)
+				Ω(failureMessage).Should(ContainSubstring(expectedMessage))
+			})
 		})
 	})
 
